@@ -11,21 +11,30 @@ if !xl := ComObjActive("Excel.Application") {
 
 currentUser := IniRead("settings.ini", "Settings", "currentUser")
 
+#HotIf WinActive("ahk_exe EXCEL.EXE")
 F1::findBlocked()
 
 findBlocked() {
+
+	xl := ComObjActive("Excel.Application")
     
-    destinationCountry := unset
+    destinationCountry := ""
 
     blockCount := 0
+	blockedPositions := ""
 
     findCountry()
 
     selectedRange := xl.Selection
     selectedRange.ClearFormats
-    selectedRange.Offset(0,-3).ClearFormats
-    selectedRange.Offset(0,1).ClearFormats
-    selectedRange.Offset(0,4).ClearFormats
+    cellPosition := selectedRange.Offset(0,-3)
+    cellOrigin := selectedRange.Offset(0,1)
+    cellSanctioned := selectedRange.Offset(0,4)
+    cellSupplier := selectedRange.Offset(0,5)
+
+    cellPosition.ClearFormats
+    cellOrigin.ClearFormats
+    cellSanctioned.ClearFormats
 
     cellLevel:
     for each, cell in selectedRange {
@@ -36,7 +45,6 @@ findBlocked() {
                 each.Offset(0,-3).Style := "Bad"
                 each.Offset(0,4).Value := "Y"
                 each.Offset(0,4).Style := "Bad"
-                ; blockcount++
             }
         }
         if destinationCountry = "BY"
@@ -44,19 +52,24 @@ findBlocked() {
                 if InStr(each.Value, code) {
                     each.Style := "Bad"
                     each.Offset(0,-3).Style := "Bad"
-                    each.Offset(0,4).Value := "Y"
-                    each.Offset(0,4).Style := "Bad"
-                    ; blockcount++
+					each.Offset(0,4).Value := "Y"
+					each.Offset(0,4).Style := "Bad"
                 }
             }
         if InStr(each.Offset(0,1).Value, "US") {
             each.Offset(0,1).Style := "Bad"
-            each.Offset(0,-3).Style := "Bad"
         }
+
+		for supplier, description in suppliers
+			if InStr(each.Offset(0,6).Value, supplier) {
+				each.Offset(0,5).Value := "Y"
+				each.Offset(0,7).Style := "Explanatory Text"
+				each.Offset(0,7).Value := description
+			}
     }
 
     for each, cell in selectedRange {
-        if each.Offset(0,4).Value = "Y" {
+        if (each.Offset(0,4).Value = "Y" or each.Offset(0,5).Value = "Y" or each.Offset(0,1).Value = "US") {
             blockCount++
             blockedPositions .= each.Offset(0,-3).Text ", "
         }
@@ -64,13 +77,21 @@ findBlocked() {
             each.Offset(0,4).Value := "N"
     }
 
-    if blockCount >= 1 {
-        if checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipmnet Check") or checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipment Check")
-            checkResult.Offset(0,1).Value := "Blocked, " currentUser " " CurrentDate "; Remove positions: " RTrim(blockedPositions, ", ") "."
-        TrayTip("Found " blockCount " blocks!", "Check complete!")
-    }
-    else
-        TrayTip("Zero blocks so far.", "Check complete!")
+	printResults()
+
+	printResults() {
+		if blockCount >= 1 {
+			if checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipmnet Check") or checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipment Check")
+				checkResult.Offset(0,1).Value := "Blocked, " currentUser " " CurrentDate "; Remove positions: " RTrim(blockedPositions, ", ") "."
+		TrayTip("Found " blockCount " blocks!", "Check complete!")
+		}
+		else {
+			if checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipmnet Check") or checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipment Check")
+				checkResult.Offset(0,1).Value := "OK, " currentUser " " CurrentDate ";"
+			
+				TrayTip("Zero blocks so far.", "Check complete!")
+		}
+	}
         
     findCountry() {
     
@@ -91,4 +112,6 @@ findBlocked() {
         return destinationCountry
     
     }
+
+	xl := ""
 }
