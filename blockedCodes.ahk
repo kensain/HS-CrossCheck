@@ -1,3 +1,9 @@
+yellowGoods := [
+    "bearing",
+    "valve",
+    "pump",
+]
+
 suppliers := Map(
     "Rockwell",     "Rockwell",
     "Danfoss",      "Danfoss",
