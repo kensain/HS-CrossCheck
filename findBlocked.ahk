@@ -1,7 +1,8 @@
 #SingleInstance Force
 Persistent
 
-#Include blockedCodes.ahk
+; #Include blockedCodes.ahk
+#Include blockedCodes_december.ahk
 CurrentDate := FormatTime(, "dd.MM.yyyy")
 
 if !xl := ComObjActive("Excel.Application") {
@@ -23,6 +24,8 @@ getStyleName() {
 findBlocked() {
     
     xl := ComObjActive("Excel.Application")
+
+    Found := unset
     
     if xl.International[1] = 1 {
         bad := "Bad"
@@ -75,6 +78,7 @@ findBlocked() {
             }
             if InStr(each.Offset(0,1).Value, "US") {
                 each.Offset(0,1).Style := bad
+                each.Offset(0,-3).Style := bad
             }
             
             for supplier, description in suppliers
@@ -96,10 +100,10 @@ findBlocked() {
 	
     for each, cell in selectedRange {
         if each.Offset(0,4).Value != "Y"
-			each.Offset(0,4).Value := "N"
-    if each.Offset(0,5).Value != "Y"
-        each.Offset(0,5).Value := "N"
-}
+            each.Offset(0,4).Value := "N"
+        if each.Offset(0,5).Value != "Y"
+            each.Offset(0,5).Value := "N"
+    }
     for each, cell in selectedRange 
         for every, keyword in yellowGoods
             if InStr(each.Offset(0, -1).Text, keyword)
@@ -119,20 +123,23 @@ findBlocked() {
             if checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipmnet Check") or checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipment Check")
 				checkResult.Offset(0,1).Value := "Blocked, " fullNames[A_UserName] " " CurrentDate "; Remove positions: " RTrim(blockedPositions, ", ") "."
 		TrayTip("Found " blockCount " blocks!", "Check complete!")
-    }
-    else {
-        if checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipmnet Check") or checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipment Check")
-				checkResult.Offset(0,1).Value := "OK, " fullNames[A_UserName] " " CurrentDate ";"
-			
-				TrayTip("Zero blocks so far.", "Check complete!")
-		}
+        }
+        else {
+            if checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipmnet Check") or checkResult := xl.ActiveSheet.Range("A:AZ").Find("Equipment Check")
+                checkResult.Offset(0,1).Value := "OK, " fullNames[A_UserName] " " CurrentDate ";"
+            
+                TrayTip("Zero blocks so far.", "Check complete!")
+        }
 	}
         
     findCountry() {
-    
-        try Found := xl.ActiveSheet.Range("A:AZ").Find("Country:")
-        catch Error as e {
-            TrayTip("The `"Country:`" cell is not found!")
+        
+        if !IsSet(Found) {
+            try Found := xl.ActiveSheet.Range("A:AZ").Find("Country:")
+            catch Error as e {
+                TrayTip("The `"Country:`" cell is not found!")
+                ExitApp()
+            }
         }
     
         if RegExMatch(Found.Offset(0,1).Value, "RU|Russia|Russian Federation|RF")

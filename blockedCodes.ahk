@@ -10,6 +10,7 @@ suppliers := Map(
     "HBK",          "HBK",
     "ABB",          "ABB",
     "Rittal",       "Rittal",
+    "Jabsco",       "Jabsco - Part of the Xylem Group",
     "JKF",          "JKF",
     "Grundfos",     "Grundfos",
     "Munters",      "Munters",
